@@ -3,12 +3,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class Graph {
+	private String[] header;
 	private int[] supply;
 	private int[] demand;
 	private int[][] cost;
 	private int[][] supplied;
+	private List<String[]> data;
 	
 	public Graph(List<String[]> data) {
+		this.data = data;
+		header = data.get(0);
+		extractData(data);
+		supplied = new int[data.size()-2][data.get(1).length - 2];
+	}
+	
+	private void extractData(List<String[]> data) {
 		// Find supply. Subtract 2: first row is label, last is demand.
 		supply = new int[data.size()-2];
 		for (int i = 1; i < data.size()-1; i++) {
@@ -34,9 +43,6 @@ public class Graph {
 				cost[i][j] = Integer.parseInt(data.get(i+1)[j + 1].replaceAll("\\s+",""));
 			}
 		}
-		
-		// Initialize supplied.
-		supplied = new int[data.size()-2][data.get(1).length - 2];
 	}
 
 	public void greedySolution() {
@@ -45,6 +51,8 @@ public class Graph {
 			int[] result = findMinCost();
 			supplyItems(result);
 		}
+		// Reinitialize supply and demand data.
+		extractData(data);
 	}
 	
 	public void optimalSolution() {
@@ -64,24 +72,28 @@ public class Graph {
 		int minCost = 0;
 		List<int[]> optimalRoute = new ArrayList<int[]>();;
 		for (int i = 0; i < empty.size(); i++) {
-			// Find new route.
-			List<int[]> route = newRoute(empty.get(i));
-			if (route == null)
+			// Find all possibles new routes for empty node.
+			List<List<int[]>> routes = findNewRoutes(empty.get(i));
+			
+			if (routes == null)
 				continue;
 			
-			// Calculate marginal cost.
+			// Calculate marginal cost of each route.
 			int mc = 0;
 			int[] negate = new int[]{1, -1};
-			for (int j = 0; j < route.size(); j++) {
-				// Alternate addition and subtraction of costs.
-				int[] r = route.get(j);
-				mc += cost[r[0]][r[1]] * negate[j%2];
-			}
-			
-			if (mc < minCost) {
-				// Found a better route!
-				minCost = mc;
-				optimalRoute = new ArrayList<int[]>(route);
+			for (int r = 0; r < routes.size(); r++) {
+				for (int j = 0; j < routes.get(r).size(); j++) {
+					// Alternate addition and subtraction of costs.
+					int[] node = routes.get(r).get(j);
+					mc += cost[node[0]][node[1]] * negate[j%2];
+				}
+							
+				if (mc < minCost) {
+					// Found a better route!
+					minCost = mc;
+					optimalRoute = new ArrayList<int[]>(routes.get(r));
+				}
+				mc = 0;
 			}
 		}
 		
@@ -126,22 +138,48 @@ public class Graph {
 	
 	public void printSolution(String title) {
 		System.out.println("\n================\n"+title+"\n================");
+		// Print header data.
+		for (int i = 1; i < header.length; i++) {
+			System.out.print("\t" + header[i]);
+		}
 		printSupplied();
-		System.out.println("Cost: " + calculateCost());
+		printDemand();
+		//System.out.println(Arrays.toString(demand));
+		System.out.println("\nTotal Cost is " + calculateCost());
 	}
 	
-	public void printSupplied() {
-		for (int i = 0; i < supplied.length; i++) {
-			System.out.println(Arrays.toString(supplied[i]));
+	public void printDemand() {
+		System.out.print("\nDEMAND");
+		for (int i = 0; i < demand.length; i++) {
+			System.out.print("\t" + demand[i]);
 		}
 	}
 	
-	private List<int[]> newRoute(int[] start) {
+	public void printSupplied() {
+		// Print supplied data.
+		for (int i = 0; i < supplied.length; i++) {
+			System.out.print("\nSource" + (1+i));
+			for (int j = 0; j < supplied[i].length; j++) {
+				System.out.print("\t" + supplied[i][j]);
+			}
+			System.out.print("\t" + supply[i]);
+		}
+	}
+	
+	public void printRoute(List<int[]> route) {
+		for (int i = 0; i < route.size(); i++) {
+			
+			System.out.print("\t" + route.get(i)[0] + "-" + header[i+1]);
+		}			
+	}
+	
+	private List<List<int[]>> findNewRoutes(int[] start) {
 		List<int[]> route = new ArrayList<int[]>();		
+		List<List<int[]>> routes = new ArrayList<List<int[]>>();
 		
 		// Add 1 to empty cell.
 		route.add(start);
-		
+			
 		// Remove 1 from cell in row to balance supply.
 		int[] cell = new int[2];
 		boolean removed = false;
@@ -150,10 +188,13 @@ public class Graph {
 			if (i == start[1])
 				continue;
 			if (supplied[start[0]][i] > 0) {
+				// Add new route to all routes
 				cell = new int[]{start[0], i};
 				route.add(cell);
+				routes.add(new ArrayList<int[]>(route));
+				route.remove(cell);
 				removed = true;
-				break;
+				//break;
 			}
 		}
 		if (!removed) {
@@ -163,14 +204,19 @@ public class Graph {
 		
 		// Add 1 in column to balance demand.
 		removed = false;
-		for (int i = 0; i < supplied.length; i++) {
-			if (i == start[0])
-				continue;
-			if (supplied[i][cell[1]] > 0) {
-				cell = new int[]{i, cell[1]};
-				route.add(cell);
-				removed = true;
-				break;
+		for (int r = 0; r < routes.size(); r++) {
+			cell = routes.get(r).get(1);
+			for (int i = 0; i < supplied.length; i++) {
+				if (i == start[0])
+					continue;
+				if (supplied[i][cell[1]] > 0) {
+					// Modify.
+					cell = new int[]{i, cell[1]};
+					routes.get(r).add(cell);
+					route.remove(cell);
+					removed = true;
+					//break;
+				}
 			}
 		}
 		if (!removed) {
@@ -179,13 +225,29 @@ public class Graph {
 		}
 		
 		// Remove 1 in start column to balance supply and demand.
-		if (supplied[cell[0]][start[1]] > 0)  
-			route.add(new int[]{cell[0], start[1]});
-		else
-			route = newRoute(start, new int[][]{{cell[0], start[1]}});
-		return route;
+		for (int r = 0; r < routes.size(); r++) {
+			// Skip routes with incomplete cycles.
+			if (routes.get(r).size() < 3)
+				continue;
+			cell = routes.get(r).get(2);
+			if (supplied[cell[0]][start[1]] > 0)  
+				routes.get(r).add(new int[]{cell[0], start[1]});
+			//else
+			//	route = newRoute(start, new int[][]{{cell[0], start[1]}});
+		}
+		// Filter routes to keep only valid cycles.
+		return filterRoutes(routes, 4);
 	}
-	private List<int[]> newRoute(int[] start, int[][] exclude) {
+	
+	private List<List<int[]>> filterRoutes(List<List<int[]>> routes, int n) {
+		List<List<int[]>> r = new ArrayList<List<int[]>>();
+		for (int i = 0; i < routes.size(); i++) {
+			if (routes.get(i).size() == n) 
+				r.add(routes.get(i));
+		}
+		return r;
+	}
+	/*private List<int[]> newRoute(int[] start, int[][] exclude) {
 		List<int[]> route = new ArrayList<int[]>();		
 		
 		// Add 1 to empty cell.
@@ -213,6 +275,8 @@ public class Graph {
 			return null;
 		}
 		
+		System.out.println(Arrays.toString(node));
+		
 		// Add 1 in column to balance demand.
 		removed = false;
 		for (int i = 0; i < supplied.length; i++) {
@@ -237,7 +301,7 @@ public class Graph {
 		if (supplied[node[0]][start[1]] > 0)  
 			route.add(new int[]{node[0], start[1]});
 		return route;
-	}
+	}*/
 	
 	private boolean contains(int[] n, int[][] l) {
 		for (int i = 0; i < l.length; i++) {
