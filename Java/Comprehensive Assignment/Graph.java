@@ -55,7 +55,7 @@ public class Graph {
 		extractData(data);
 	}
 	
-	public void optimalSolution() {
+	public List<int[]> optimalSolution() {
 		if (numOccupiedCells() == 0) 
 			greedySolution();
 		
@@ -99,14 +99,14 @@ public class Graph {
 		
 		if (optimalRoute.size() <= 0) {
 			System.out.println("\nNo better solution found!");
-			return;
+			return null;
 		}
 
-		System.out.println("\n==============\nOptimal Route\n==============");
-		for (int j = 0; j < optimalRoute.size(); j++) {
-			System.out.println("Node " + j + ": " + Arrays.toString(optimalRoute.get(j)));
-		}
-		System.out.println("\nMargin: " + minCost);
+		// System.out.println("\n==============\nOptimal Route\n==============");
+		// for (int j = 0; j < optimalRoute.size(); j++) {
+			// System.out.println("Node " + j + ": " + Arrays.toString(optimalRoute.get(j)));
+		// }
+		// System.out.println("\nMargin: " + minCost);
 		
 		// Transfer min(deductions) to prevent negatives
 		int amount = minSupplied(optimalRoute.get(1), optimalRoute.get(3));
@@ -120,6 +120,8 @@ public class Graph {
 		supplied[lesserNode0[0]][lesserNode0[1]] -= amount;
 		supplied[betterNode1[0]][betterNode1[1]] += amount;
 		supplied[lesserNode1[0]][lesserNode1[1]] -= amount;
+		
+		return optimalRoute;
 	}
 	
 	public int calculateCost() {
@@ -137,7 +139,7 @@ public class Graph {
 	}
 	
 	public void printSolution(String title) {
-		System.out.println("\n================\n"+title+"\n================");
+		System.out.println("\n=======================\n"+title+"\n=======================");
 		// Print header data.
 		for (int i = 1; i < header.length; i++) {
 			System.out.print("\t" + header[i]);
@@ -167,9 +169,9 @@ public class Graph {
 	}
 	
 	public void printRoute(List<int[]> route) {
+		if (route == null) return;
 		for (int i = 0; i < route.size(); i++) {
-			
-			System.out.print("\t" + route.get(i)[0] + "-" + header[i+1]);
+			System.out.print(route.get(i)[0] + "-" + header[route.get(i)[1]+1] + "\t");
 		}			
 	}
 	

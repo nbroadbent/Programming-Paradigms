@@ -25,14 +25,20 @@ public class findOptimalTransport {
 		// Find greedy solution.
 		Graph g = new Graph(data);
 		g.greedySolution();
-		g.printSolution("Greedy Solution");
+		g.printSolution("Initial Greedy Solution");
 		
 		// Check for degenerate case.
 		if (g.isDegenerate()) 
 			System.out.println("\nWarning: Degenerate Case! Optimized solution may not be correct.");
 		
 		// Find optimized solution.
-		g.optimalSolution();
-		g.printSolution("Optimal Solution");
+		List<int[]> route = g.optimalSolution();
+		g.printSolution("Final Optimal Solution");
+		
+		// Print optimal route.
+		if (route != null) {
+			System.out.println("\n==============\nOptimal Route\n==============");
+			g.printRoute(route);
+		}
 	}
 }
