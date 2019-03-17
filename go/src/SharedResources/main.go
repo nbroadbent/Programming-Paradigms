@@ -97,9 +97,9 @@ func main() {
 	wg.Wait()
 	
 	fmt.Println("==============\nLow Ratio\n==============")
-	fmt.Println("Length: ", len(lowRatio))
+	fmt.Println("Number of Triangles: ", len(lowRatio))
 	lowRatio.Pop().print()
 	fmt.Println("\n==============\nHigh Ratio\n==============")
-	fmt.Println("Length: ", len(highRatio))
+	fmt.Println("Number of Triangles: ", len(highRatio))
 	highRatio.Pop().print()
 }

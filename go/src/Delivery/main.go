@@ -42,10 +42,13 @@ type TrainCar struct {
 	railway string
 }
 
-func NewTruck() Truck {
+func NewTruck(name string) Truck {
+	if len(name) <= 0 {
+		name = "Truck"
+	}
 	return Truck{
 		Vehicle{vehicle: "Truck",
-				name: "Truck",
+				name: name,
 				destination: "",
 				speed: 40,
 				capacity: 10,
@@ -53,10 +56,13 @@ func NewTruck() Truck {
 	}
 }
 
-func NewPickup() Pickup {
+func NewPickup(name string) Pickup {
+	if len(name) <= 0 {
+		name = "Pickup"
+	}
 	return Pickup{
 		Vehicle{vehicle: "Pickup",
-				name: "Pickup",
+				name: name,
 				destination: "",
 				speed: 60,
 				capacity: 2,
@@ -65,10 +71,13 @@ func NewPickup() Pickup {
 	}
 }
 
-func NewTrainCar() TrainCar {
+func NewTrainCar(name string) TrainCar {
+	if len(name) <= 0 {
+		name = "TrainCar"
+	}
 	return TrainCar{
 		Vehicle{vehicle: "TrainCar",
-				name: "TrainCar",
+				name: name,
 				destination: "",
 				speed: 30,
 				capacity: 30,
@@ -86,18 +95,27 @@ func NewMontrealTrip(weight float32, deadline int) *Trip {
 }
 
 func (t *Truck) addLoad(trip Trip) error {
+	// Check if vehicle can make trip.
+	if t.destination != "" && t.destination != trip.destination {
+		return fmt.Errorf("Error: Other destination")
+	}
 	if t.capacity < (t.load + trip.weight) {
 		return fmt.Errorf("Error: Out of capacity")
 	}
 	if t.destination == "" {
 		// Add new destination to truck.
 		t.destination = trip.destination
-	} else {
-		// Check if destinations match
-		if t.destination != trip.destination {
-			return fmt.Errorf("Error: Other destination")
-		}
 	}
+	// Check if enough time to make trip
+	distance := 400 
+	if t.destination == "Montreal" {
+		distance = 200
+	}
+	time := float64(distance) / float64(t.speed)
+	if time > float64(trip.deadline) {
+		return fmt.Errorf("Error: Not enough time to meet deadline.")
+	}
+	
 	t.load = t.load + trip.weight
 	return nil
 }
@@ -115,6 +133,16 @@ func (p *Pickup) addLoad(trip Trip) error {
 			return fmt.Errorf("Error: Other destination")
 		}
 	}
+	// Check if enough time to make trip
+	distance := 400 
+	if p.destination == "Montreal" {
+		distance = 200
+	}
+	time := float64(distance) / float64(p.speed)
+	if time > float64(trip.deadline) {
+		return fmt.Errorf("Error: Not enough time to meet deadline.")
+	}
+	
 	p.load = p.load + trip.weight
 	return nil
 }
@@ -132,6 +160,16 @@ func (tc *TrainCar) addLoad(trip Trip) error {
 			return fmt.Errorf("Error: Other destination")
 		}
 	}
+	// Check if enough time to make trip
+	distance := 400 
+	if tc.destination == "Montreal" {
+		distance = 200
+	}
+	time := float64(distance) / float64(tc.speed)
+	if time > float64(trip.deadline) {
+		return fmt.Errorf("Error: Not enough time to meet deadline.")
+	}
+	
 	tc.load = tc.load + trip.weight
 	return nil
 }
@@ -183,9 +221,9 @@ func getInput() (string, float32, int) {
 }
 
 func main() {
-	trucks := [2]Truck{NewTruck(), NewTruck()}
-	pickups := [3]Pickup{NewPickup(), NewPickup(), NewPickup()}
-	trains := [1]TrainCar{NewTrainCar()}
+	trucks := [2]Truck{NewTruck("Truck A"), NewTruck("Truck B")}
+	pickups := [3]Pickup{NewPickup("Pickup A"), NewPickup("Pickup B"), NewPickup("Pickup C")}
+	trains := [1]TrainCar{NewTrainCar("TrainCar A")}
 	//vehicles := []interface{}{trucks, pickups, trains}
 	trips := make([]Trip, 0)
 	
