@@ -1,22 +1,24 @@
-pathsLast().
+pathsEnd(_, [], []).
+pathsEnd(S, [[[Si, Sj]|[HH,[Pi, Pj]]]|T], [Path|R]):-
+	pathsEnd(S, T, R),
+	index(S, Pi, Sj, V),
+	atom_number(V, X),
+	X > 0,
+	Path = [[Si, Sj], HH, [Pi, Pj], [Pi, Sj]].
 
 pathsVert(S, I1, J, I0, L1, L):-
-	nl,nl, write("I1"+I1),nl,write("J"+J),nl,
 	I0 == I1,
-	write("true"),
 	I2 is I1 + 1,
 	pathsVert(S, I2, J, I0, L1, L).
 pathsVert(S, I1, J, I0, L1, L):-
 	length(S, Len),
 	I1 < (Len-1) -> (
-		write("I":I1),nl,write("J":J),nl,
 		index(S, I1, J, V),
-		write("V":V), nl,
 		atom_number(V, X),
 		X > 0,
-		write("true"), L2=[I1,J], write("L2": L2),nl,
+		L2=[I1,J],
 		I2 is I1 + 1, pathsVert(S, I2, J, I0, [L2|L1], L)
-	); write("END"), L=L1, !.
+	); L=L1, !.
 pathsVert(S, I1, J, I0, L1, L):-
 	length(S, Len),
 	I1 < (Len-1),
@@ -24,31 +26,24 @@ pathsVert(S, I1, J, I0, L1, L):-
 	
 verticalCheck(_, _, [], []).
 verticalCheck(Start, S, [[I,J]|T], [Path|R]):-
-	write("I is ": I),write("   J is ": J), write("   T is": T),nl,
 	verticalCheck(Start, S, T, R),
 	pathsVert(S, 0, J, I, [], P),
-	not(P = []),
 	append([Start], [[I,J]], P1), 
-	append([P1], [P], Path),
-	nl,nl,write("P": P1).
+	append(P1, P, Path).
 
 pathsHor(S, I, J1, J0, L1, L):-
-	nl,nl, write("J1"+J1),nl,write("J0"+J0),nl,
 	J0 == J1,
-	write("true"),
 	J2 is J1 + 1,
 	pathsHor(S, I, J2, J0, L1, L).
 pathsHor([H|T], I, J1, J0, L1, L):-
 	length(H, Len),
 	J1 < (Len-1) -> (
-		write("I":I),nl,write("J1":J1),nl,
 		index([H|T], I, J1, V),
-		write("V":V), nl,
 		atom_number(V, X),
 		X > 0,
-		write("true"), L2=[I,J1], write("L2": L2),nl,
+		L2=[I,J1],
 		J2 is J1 + 1, pathsHor([H|T], I, J2, J0, [L2|L1], L)
-	); write("END"), L=L1, !.
+	); L=L1, !.
 pathsHor([H|T], I, J1, J0, L1, L):-
 	length(H, Len),
 	J1 < (Len-1),
@@ -58,22 +53,29 @@ appendPaths(_, [], []).
 appendPaths(S, [H|T], [P|R]):-
 	appendPaths(S, T, R),
 	P = [S|[H]].
+
+removeLT3([], []).
+removeLT3([H|T], [H|R]):-
+	length(H, Len),
+	Len == 3,
+	removeLT3(T, R).
+removeLT3([H|T], R):-
+	removeLT3(T, R).
 	
-paths(D, S, [[I,J]|T], R):-
-	write("I":I),nl,write(" J": J), 
+paths(_, _, [], []).
+paths(D, S, [[I,J]|T], [Result|R]):-
 	pathsHor(S, I, 0, J, [], Paths1),
-	nl,nl,write("VERT"),nl,
-	%pathsVert(S, 0, 1, 2, [], R),
-	verticalCheck([I, J], S, Paths1, R),
-	%appendPaths([I,J], Paths1, R),
-	%nl,nl,write("VERT"),nl,write(J1),nl,
-	%append([[I,J]],[[I1,J1]], R1),
-	%append(R1, [[I2, J2]], R),
-	write("R": R), nl.
+	verticalCheck([I, J], S, Paths1, Paths2),
+	removeLT3(Paths2, Paths3),
+	paths(D, S, T, R),
+	pathsEnd(S, Paths3, Result).
 	
 index(Matrix, I, J, Value):-
 	nth0(I, Matrix, MatrixRow),
 	nth0(J, MatrixRow, Value).
+	
+isEmpty([], true).
+isEmpty(_, false).
 
 % Check if we should go to next list%
 empty([H|T], I, J, L1, L):-
@@ -101,6 +103,20 @@ empty(S, I, J, L1, L):-
 	
 removeFirst([H|T], T).
 
+pathCost(D, [[I,J], [I1,J1], [I2,J2], [I3, J3]], R):-
+	index(D, I, J, V1), index(D, I1, J1, V2), 
+	index(D, I2, J2, V3), index(D, I3, J3, V4),
+	atom_number(V1, X1), atom_number(V2, X2),
+	atom_number(V3, X3), atom_number(V4, X4),
+	R is X1 - X2 + X3 - X4.
+	
+minCost(_, [], 0).
+minCost(D, [[H|TT]|T], Min1):-
+	minCost(D, T, Min),
+	pathCost(D, H, Cost),
+	Cost < Min,
+	Min1 = Cost.
+
 minimumTransportCost(D, I, Cost):-
 	open(D, read, Str1),
     read_file(Str1, Lines1),
@@ -120,15 +136,15 @@ minimumTransportCost(D, I, Cost):-
 	.
 	
 emptyCells([H|T]):-
-	
-=======
 	write(Sol), nl,
+=======
+>>>>>>> 707f99732fdff2faf8793405c7478a963809ea29
 	empty(Sol, 0, 0, [], E),
-	removeFirst(E, Empty),
-	write(Empty),
+	removeFirst(E, Empty), !,
 	paths(Desc, Sol, Empty, R),
-	write(Empty).
->>>>>>> 55522d36d6d588b404702ca895fcad6d84abae88
+	delete(R, [], Paths),
+	minCost(Desc, Paths, C), !,
+	Cost is C.
 	
 extractHeader([H|T], H, T).
 
