@@ -131,11 +131,6 @@ minimumTransportCost(D, I, Cost):-
     extractHeader(Lines2, Header, DATA2),
 	extract(DATA2, D2),
 	removeLeft(D2, Sol),
-	write(Desc), nl, write(Sol), nl,
-	.
-	
-emptyCells([H|T]):-
-	write(Sol), nl,
 	empty(Sol, 0, 0, [], E),
 	removeFirst(E, Empty), !,
 	paths(Desc, Sol, Empty, R),
