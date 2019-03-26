@@ -1,0 +1,6 @@
+COSTS A B C D SUPPLY
+Source2 0 - - 134 134
+Source3 175 - - 28 203
+Source4 - - 175 1 176
+Source5 - 175 - 12 187
+DEMAND 175 175 175 175
