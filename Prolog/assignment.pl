@@ -78,15 +78,21 @@ teamsPlayers([], []).
 teamsPlayers([Team|T], [X|R]):-
 	teamsPlayers(T, R),
 	findall(Player, player(Player, Team), X).
-listPlayers(X):-
+listPlayers1(X):-
 	findall(Team, team(Team, ottawa), Teams),
 	teamsPlayers(Teams, P), flatten(P, Ottawa),
 	findall([Player, Sport], sport(Player, Sport), All),
-	write("All": All),nl, write("Ottawa": Ottawa), nl, nl,
 	intersect(All, Ottawa, X).
 
+listPlayers(X):-
+	findall((Player, Sport), (sport(Player, Sport), player(Player, Team), team(Team, ottawa)), X).
+
 myAnswer():-
-	bball(X), write(X).
+	bball(A), write(A), nl,
+	ontario(B), write(B), nl,
+	playMore(C), write(C), nl,
+	listPlayers(D), write(D), nl,
+	setof(sport(Player,Sport), (D), E), write(E).
 	
 %2.
 interest(X):-
@@ -136,6 +142,20 @@ switch([[[H|TTT]|TT]|T], R):-
 turn(L1, L2, R):-
 	rev(L1, L2, R1),
 	switch(R1, R), !.
+	
+find([], _, _, _, []).
+find([H|T], S, L, N, R):-
+	not(member(H, S)),
+	find(T, S, [H|L], N, R).
+find([H|T], S, L, N, [L1|R]):-
+	member(H, S),
+	N1 is N+1,
+	find(T, S, [], N1, R),
+	X is N mod 2,
+	(X is 0) -> reverse([H|L], L1); L1 = [H|L].
+	
+turn1(L1, L2, R):-
+	find(L1, L2, [], 1, R).
 	
 %5. a)
 treeEx(X):-

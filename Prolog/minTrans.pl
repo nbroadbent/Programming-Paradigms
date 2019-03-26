@@ -59,7 +59,7 @@ removeLT3([H|T], [H|R]):-
 	length(H, Len),
 	Len == 3,
 	removeLT3(T, R).
-removeLT3([H|T], R):-
+removeLT3([_|T], R):-
 	removeLT3(T, R).
 	
 paths(_, _, [], []).
@@ -70,10 +70,33 @@ paths(D, S, [[I,J]|T], [Result|R]):-
 	paths(D, S, T, R),
 	pathsEnd(S, Paths3, Result).
 	
+% Helper function that allows us to find values in 2d list
 index(Matrix, I, J, Value):-
 	nth0(I, Matrix, MatrixRow),
 	nth0(J, MatrixRow, Value).
 	
+% Replace item at index J in 1d list with value
+insert1D([], _, _, []).
+insert1D([H|T], J, Value, [Value|T]):-
+	J == 0.
+insert1D([H|T], J, Value, [H|R]):-
+	J > 0,
+	J1 is J - 1,
+	insert1D(T, J1, Value, R).
+	
+% Loop until we find the right row, then insert 1d into row.
+insert2D([], _, _, _, []).
+insert2D([H|T], I, J, Value, [Row|T]):-
+	I == 0,
+	insert1D(H, J, Value, Row).
+insert2D([H|T], I, J, Value, [H|R]):-
+	I > 0,
+	I1 is I - 1,
+	insert2D(T, I1, J, Value, R).
+	
+appendFront(Value, List, [Value|List]).
+	
+% Function to check if a list is empty
 isEmpty([], true).
 isEmpty(_, false).
 
@@ -101,47 +124,114 @@ empty(S, I, J, L1, L):-
 	J1 is J+1,
 	empty(S, I, J1, L1, L).
 	
-removeFirst([H|T], T).
+removeFirst([_|T], T).
 
-pathCost(D, [[I,J], [I1,J1], [I2,J2], [I3, J3]], R):-
+pathCost(D, S, [[I,J], [I1,J1], [I2,J2], [I3, J3]], R):-
+	% Calculate max amount to tranfer for this path, where max is min of subtracted nodes
+	index(S, I, J, Vs1), index(S, I1, J1, Vs2), 
+	index(S, I2, J2, Vs3), index(S, I3, J3, Vs4),
+	convZero(Vs1, Xs1), convZero(Vs2, Xs2),
+	convZero(Vs3, Xs3), convZero(Vs4, Xs4),
+	min_list([Xs2, Xs4], Min),
+	
+	% Calculate path cost
 	index(D, I, J, V1), index(D, I1, J1, V2), 
 	index(D, I2, J2, V3), index(D, I3, J3, V4),
-	atom_number(V1, X1), atom_number(V2, X2),
-	atom_number(V3, X3), atom_number(V4, X4),
-	R is X1 - X2 + X3 - X4.
+	convZero(V1, X1), convZero(V2, X2),
+	convZero(V3, X3), convZero(V4, X4),
+	R is (X1 - X2 + X3 - X4) * Min.
 	
-minCost(_, [], 0).
-minCost(D, [[H|TT]|T], Min1):-
-	minCost(D, T, Min),
-	pathCost(D, H, Cost),
+minCost(_, _, [], _, 0).
+minCost(D, S, [[H|_]|T], Path, Min1):-
+	minCost(D, S, T, Path, Min),
+	pathCost(D, S, H, Cost),
 	Cost < Min,
-	Min1 = Cost.
+	Min1 = Cost,
+	Path = H.
+	
+rowCost([H|[]], _, C, C).
+rowCost([H1|T1], [H2|T2], C, Cost):-
+	convZero(H1, N1), convZero(H2, N2),
+	C1 is C + (N1 * N2),
+	rowCost(T1, T2, C1, Cost).
+	
+totalCost([H|[]], _, C, C).
+totalCost([H1|T1], [H2|T2], C1, Cost):-
+	rowCost(H1, H2, 0, C),
+	C2 is C1 + C,
+	totalCost(T1, T2, C2, Cost), !.
 
 minimumTransportCost(D, I, Cost):-
 	open(D, read, Str1),
     read_file(Str1, Lines1),
     close(Str1),
-    extractHeader(Lines1, Header, DATA1),
+    extractHeader(Lines1, Header1, DATA1),
 	extract(DATA1, D1),
 	removeLeft(D1, Desc),
 	
 	open(I, read, Str2),
     read_file(Str2, Lines2),
     close(Str2),
-    extractHeader(Lines2, Header, DATA2),
+    extractHeader(Lines2, Header2, DATA2),
 	extract(DATA2, D2),
 	removeLeft(D2, Sol),
 	empty(Sol, 0, 0, [], E),
 	removeFirst(E, Empty), !,
 	paths(Desc, Sol, Empty, R),
 	delete(R, [], Paths),
-	minCost(Desc, Paths, C), !,
-	Cost is C.
+	minCost(Desc, Sol, Paths, Path, C), !,
+	transfer(Sol, Path, NewSol),
+	writeSolution([Header2|NewSol]),
+	totalCost(Desc, NewSol, 0, Cost), !.
+	
+convZero(V, V1):-
+	not(number(V)) -> (
+		V == "-" -> (V1 is 0); (atom_number(V, V1))
+	); V1 is V.
+	
+transfer(S, [[I,J], [I1,J1], [I2,J2], [I3, J3]], R):-
+	index(S, I, J, V1), index(S, I1, J1, V2), 
+	index(S, I2, J2, V3), index(S, I3, J3, V4),
+	
+	% Convert - to 0
+	convZero(V1, X1), convZero(V2, X2),
+	convZero(V3, X3), convZero(V4, X4),
+	% We will transfer min amount so we don't take too much.
+	min_list([X2, X4], Min),
+	X11 is X1 + Min, X22 is X2 - Min,
+	X33 is X3 + Min, X44 is X4 - Min,
+	% Now insert the transfer into our lists
+	insert2D(S, I, J, X11, S1), insert2D(S1, I1, J1, X22, S2),
+	insert2D(S2, I2, J2, X33, S3), insert2D(S3, I3, J3, X44, R).
+
+formatRow(L, N, M, R):-
+	N > 1 -> ( N == M -> (
+			appendFront("DEMAND", L, R)
+		); (
+			% Make source1, source2... string then append to front of row
+			atom_concat("Source", N, Source),
+			appendFront(Source, L, R)
+		)
+	); R = L.
+	
+writeStream([], _, _, _).
+writeStream([H|T], N, M, S):-
+	flatten(H, F),
+	formatRow(F, N, M, Row),
+	atomic_list_concat(Row, ' ', String),
+	write(S, String), write(S, "\n"),
+	N1 is N + 1,
+	writeStream(T, N1, M, S).
+writeSolution(Data):-
+	open("solution.txt", write, S),
+	length(Data, M),
+	writeStream(Data, 1, M, S),
+	close(S).
 	
 extractHeader([H|T], H, T).
 
 removeLeft([], []).
-removeLeft([[H|TT]|T], [TT|L]):-
+removeLeft([[_|TT]|T], [TT|L]):-
 	removeLeft(T, L).
 	
 extract([], []).
