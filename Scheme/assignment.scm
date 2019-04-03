@@ -36,16 +36,17 @@
       #f))
 
 ; B
-(define (cpy_h x l n)
-  (if (< n (length x))
-      ; Get value in list at index n, alt use car
-      (let ((value (list-ref x n)))
+(define (cpy_h x l)
+  (if (> (length x) 0)
+      ; Remove head from list and check if head is a separator
+      (let ((value (car x)) (newList (cdr x)))
         (if (separator? value)
             l
-            (cpy_h x (append l (cons value '())) (+ 1 n))))
+            ; Build up new list
+            (cpy_h newList (append l (cons value '())))))
   l))
 (define (cpy x)
-  (cpy_h x '() 0))
+  (cpy_h x '()))
 
 ; C
 (define (drop x)
@@ -94,7 +95,7 @@
     ; Now check the rest of the list
     (checkRest newList '() key chars)))
   
-;#| Testing Solutions
+#| Testing Solutions
 (display "Q1") (newline)
 (lover '(0 2 3 4 12 0 0 1 0))
 (newline) (newline)
@@ -124,5 +125,5 @@
 (display "E") (newline)
 (replace '(#\a #\space #\b #\i #\r #\d #\space #\e #\a #\t #\s #\space #\a #\space #\t #\o #\m #\a #\t #\o) '(#\a) '(#\t #\h #\e)) 
 (newline) (newline)
-;|#
+|#
   
